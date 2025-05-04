@@ -36,7 +36,7 @@ if not st.session_state.authenticated:
                     st.session_state.authenticated = True
                     st.session_state.user_email = email
                     st.success(f"{email} 님, 환영합니다!")
-                        st.rerun()
+                    st.rerun()
     if not st.session_state.authenticated:
         st.error("이메일 또는 비밀번호가 올바르지 않습니다.")
                 st.error("이메일 또는 비밀번호가 올바르지 않습니다.")
