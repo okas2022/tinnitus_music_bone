@@ -476,62 +476,6 @@ else:
     st.success(f"{duration}분 치료를 시작합니다. 음원: {selected_sound}")
     
 
-elif st.session_state.step == 10:
-    st.header("📊 이명 치료 효과 변화 분석")
-    if st.session_state.treatment_history:
-        df = pd.DataFrame(st.session_state.treatment_history)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-        st.subheader("📉 치료 전후 이명 강도 변화")
-        st.line_chart(df.set_index('timestamp')['loudness'])
-
-        st.subheader("📈 치료 시간에 따른 변화 추이")
-        df_day = df.groupby(df['timestamp'].dt.date).agg({'duration': 'sum', 'loudness': 'mean'}).reset_index()
-        df_day.columns = ['날짜', '총 치료 시간', '평균 이명 강도']
-        st.line_chart(df_day.set_index('날짜'))
-
-        st.subheader("📋 치료 피드백 요약")
-        if 'feedback' in df.columns:
-            st.bar_chart(df['feedback'].value_counts())
-    else:
-        st.info("아직 치료 이력이 부족합니다.")
-    st.header("📊 사용자별 치료 이력 시각화")
-    log_file = f"treatment_{st.session_state.user_email.replace('@','_at_')}.json"
-    if os.path.exists(log_file):
-        with open(log_file, 'r') as f:
-            logs = json.load(f)
-    if 'feedback_log' in st.session_state:
-        treatment_log.update(st.session_state.feedback_log)
-        df = pd.DataFrame(logs)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-        st.subheader("📈 치료 횟수 및 누적 시간")
-        st.metric("치료 횟수", len(df))
-        st.metric("총 치료 시간 (분)", df['duration'].sum())
-
-        st.subheader("📅 치료 시간 추이")
-        df_day = df.groupby(df['timestamp'].dt.date)['duration'].sum().reset_index()
-        df_day.columns = ['날짜', '총 치료 시간']
-        st.line_chart(df_day.set_index('날짜'))
-
-        st.subheader("🎧 사용한 음원 비율")
-        st.bar_chart(df['sound_file'].value_counts())
-
-        st.subheader("📡 Pitch 별 치료 분포")
-        st.bar_chart(df['pitch'].value_counts())
-
-        st.subheader("📝 치료 후 사용자 이명 일기")
-        if 'note' in df.columns:
-            for idx, row in df[['timestamp', 'note']].dropna().iterrows():
-                st.markdown(f"**📅 {row['timestamp']}**")
-                st.write(row['note'])
-    else:
-        st.info("치료 이력이 없습니다.")
-
-    st.markdown("---")
-    if st.button("🏠 메인으로 돌아가기"):
-        st.session_state.step = 0
-
 # 결과 요약
 elif st.session_state.step == 5:
     st.header("📋 설문 결과 종합 요약")
@@ -581,3 +525,4 @@ elif st.session_state.step == 5:
     st.success("✅ 사용자 이력이 저장되었습니다.")
 
     
+
