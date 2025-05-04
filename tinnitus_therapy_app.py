@@ -144,7 +144,7 @@ elif st.session_state.step == 1.5:
         elif avg_thresh < 80:
             st.session_state.tinnitus_level = 7
 else:
-        st.session_state.tinnitus_level = 9
+    st.session_state.tinnitus_level = 9
     st.markdown(f"👉 평균 청력 역치: {avg_thresh:.1f} dB → 이명 강도 조정: {st.session_state.tinnitus_level}")
 
     if st.button("다음 (난청 설문)"):
