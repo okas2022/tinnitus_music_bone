@@ -475,13 +475,13 @@ else:
     st.audio(output_path, format='audio/wav')
     st.success(f"{duration}분 치료를 시작합니다. 음원: {selected_sound}")
     treatment_log = {
-            "timestamp": str(datetime.datetime.now()),
-            "sound_file": selected_sound,
-            "duration": duration,
-            "pitch": st.session_state.matching_info['Pitch'],
-            "loudness": st.session_state.tinnitus_level
-        }
-        log_file = f"treatment_{st.session_state.user_email.replace('@','_at_')}.json"
+    "timestamp": str(datetime.datetime.now()),
+    "sound_file": selected_sound,
+    "duration": duration,
+    "pitch": st.session_state.matching_info['Pitch'],
+    "loudness": st.session_state.tinnitus_level
+}
+log_file = f"treatment_{st.session_state.user_email.replace('@','_at_')}.json"
         if os.path.exists(log_file):
             with open(log_file, 'r') as f:
                 logs = json.load(f)
