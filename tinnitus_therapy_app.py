@@ -490,7 +490,7 @@ Pitch 및 Loudness 측정 결과를 기반으로
         input_path = f"music/{selected_sound}" if os.path.exists(f"music/{selected_sound}") else f"uploaded_{selected_sound}"
         output_path = "modulated_audio.wav"
         if st.session_state.filter_type == "Notch Filtering (예정)":
-            pitch_freq_map = {
+    pitch_freq_map = {
         "125Hz": 125,
         "250Hz": 250,
         "500Hz": 500,
@@ -501,6 +501,8 @@ Pitch 및 Loudness 측정 결과를 기반으로
     }
     notch_freq = pitch_freq_map.get(st.session_state.matching_info["Pitch"], 1000)
     apply_notch_filter(input_path, output_path, freq=notch_freq, q=q_value)
+else:
+    apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
         else:
             apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
         st.audio(output_path, format='audio/wav')
