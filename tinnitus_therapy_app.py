@@ -2,14 +2,67 @@ import streamlit as st
 import pandas as pd
 import datetime
 
+# 로그인 기능
+import os
+import csv
+user_file = "user_credentials.csv"
+if not os.path.exists(user_file):
+    with open(user_file, mode="w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["email", "password"])
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔐 계정이 없으신가요?")
+new_email = st.sidebar.text_input("신규 이메일", key="reg_email")
+new_pw = st.sidebar.text_input("신규 비밀번호", type="password", key="reg_pw")
+if st.sidebar.button("회원가입"):
+    with open(user_file, mode="a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([new_email, new_pw])
+    st.sidebar.success("회원가입 완료. 로그인 해주세요!")
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔐 로그인")
+    email = st.text_input("이메일을 입력하세요")
+    password = st.text_input("비밀번호", type="password")
+
+    if st.button("로그인"):
+        with open(user_file, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["email"] == email and row["password"] == password:
+                    st.session_state.authenticated = True
+                    st.session_state.user_email = email
+                    st.success(f"{email} 님, 환영합니다!")
+                    st.rerun()
+            else:
+                st.error("이메일 또는 비밀번호가 올바르지 않습니다.")
+    st.stop()
+
 # 앱 초기 설정
 st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
 st.title("🎧 Tinnitus Sound Therapy App")
+
+# 온보딩 단계 (Step -1)
+if st.session_state.step == -1:
+    st.header("당신의 이명을 이해합니다")
+    st.subheader("오늘, 그 소리에 작별을 시작해보세요.")
+    st.markdown("이 앱은 당신의 이명을 진심으로 이해하고, 당신만을 위한 맞춤형 치료 여정을 돕습니다.")
+    st.markdown("---")
+    st.markdown("✅ 간단한 이명 자가진단")
+    st.markdown("✅ 청력 확인용 간이 테스트")
+    st.markdown("✅ 이명 강도 및 주파수 매칭")
+    st.markdown("---")
+    if st.button("시작하기"):
+        st.session_state.step = 0
 
 # 세션 상태 초기화
 if "mode" not in st.session_state:
     st.session_state.mode = None
 if "step" not in st.session_state:
+    st.session_state.step = -1
     st.session_state.step = 0
 if "tinnitus_level" not in st.session_state:
     st.session_state.tinnitus_level = 5
@@ -31,7 +84,7 @@ if st.session_state.step == 0:
         st.session_state.step = 1
     elif st.button("🎧 바로 치료 시작"):
         st.session_state.mode = "therapy"
-        st.session_state.step = 4
+        st.session_state.step = 6
 
 # 사용자 정보 입력
 if st.session_state.step == 1:
@@ -140,16 +193,283 @@ elif st.session_state.step == 3:
         st.session_state.step += 1
 
 # 치료 시작
+from pydub import AudioSegment
+import scipy.signal
+import numpy as np
+import numpy as np
+import scipy.signal
+
+# Notch filtering 함수 추가
+
+def apply_notch_filter(input_path, output_path, freq=1000, q=30):
+    sound = AudioSegment.from_file(input_path)
+    samples = np.array(sound.get_array_of_samples())
+    fs = sound.frame_rate
+    b, a = scipy.signal.iirnotch(freq / (fs / 2), q)
+    filtered = scipy.signal.filtfilt(b, a, samples).astype(np.int16)
+    filtered_audio = sound._spawn(filtered.tobytes())
+    filtered_audio.export(output_path, format="wav")
+
+def apply_notch_filter(input_path, output_path, freq=1000, q=30):
+    sound = AudioSegment.from_file(input_path)
+    samples = np.array(sound.get_array_of_samples())
+    fs = sound.frame_rate
+    b, a = scipy.signal.iirnotch(freq / (fs / 2), q)
+    filtered = scipy.signal.filtfilt(b, a, samples).astype(np.int16)
+    filtered_audio = sound._spawn(filtered.tobytes())
+    filtered_audio.export(output_path, format="wav")
+
+# 간단한 amplitude modulation 예시 함수
+def apply_amplitude_modulation(input_path, output_path, rate=mod_rate):
+    sound = AudioSegment.from_file(input_path)
+    samples = np.array(sound.get_array_of_samples())
+    fs = sound.frame_rate
+    duration = len(samples) / fs
+    t = np.linspace(0, duration, num=len(samples))
+    modulator = 0.5 * (1 + np.sin(2 * np.pi * rate * t))
+    modulated = samples * modulator
+    modulated = np.clip(modulated, -2**15, 2**15-1)
+    modulated_audio = sound._spawn(modulated.astype(np.int16).tobytes())
+    modulated_audio.export(output_path, format="wav")
 elif st.session_state.step == 4:
-    st.header("🎶 치료 세션 시작")
+    st.header("🔎 [2단계] 맞춤 치료 설정")
+    st.markdown("""
+    당신만의 이명 소리 특성을 기반으로 맞춤형 사운드 처방이 제공됩니다.
+    아래 정보를 입력해주세요.
+    """)
+
+    st.subheader("📌 Pitch & Loudness Matching")
     st.session_state.tinnitus_level = st.slider("이명 강도 (0~10)", 0, 10, st.session_state.tinnitus_level)
-    uploaded_file = st.file_uploader("치료용 사운드 파일 업로드", type=["mp3", "wav", "ogg"])
-    if uploaded_file:
-        st.session_state.audio_file = uploaded_file
-        st.audio(uploaded_file, format='audio/mp3')
-    st.markdown("🔗 블루투스 기기 연결은 스마트폰 설정에서 별도 진행해주세요.")
-    if st.button("치료 종료 및 결과 보기"):
+    tinnitus_pitch = st.select_slider("이명 주파수 대역", options=["125Hz", "250Hz", "500Hz", "1kHz", "2kHz", "4kHz", "8kHz"])
+    ear_side = st.radio("이명이 더 많이 느껴지는 쪽", ["왼쪽", "오른쪽", "양쪽"])
+
+    st.subheader("🎧 소리 치료 타입 선택")
+    sound_type = st.radio("청력 유형에 따라 추천되는 사운드 치료 타입", ["TMNMT (특정 주파수 제거형)", "Broadband (전체 대역 소리)"])
+
+    if st.button("다음 (치료 세션 시작)"):
+        st.session_state.matching_info = {
+            "Pitch": tinnitus_pitch,
+            "Ear Side": ear_side,
+            "Sound Type": sound_type
+        }
         st.session_state.step += 1
+
+elif st.session_state.step == 7:
+    st.header("📈 [5단계] 정량적 진척 확인 및 동기 강화")
+    st.markdown("""
+3일 연속 치료 성공!
+평균 이명 강도 20% 감소했어요.
+""")
+
+    st.subheader("📊 주간/월간 리포트")
+    st.markdown("(예시) 이번 주 평균 이명 강도: 4.2 → 지난 주 대비 ▼ 18% 감소")
+
+    st.subheader("🎮 점수 기반 레벨업")
+    st.markdown("현재 레벨: Lv.2 👂 이명 탐험가")
+    st.progress(60)
+
+    st.subheader("👥 커뮤니티 포럼")
+    st.markdown("비슷한 경험을 가진 사람들과 이야기 나누어보세요. (준비 중)")
+
+    if st.button("다음 (전문가 연결 단계)"):
+        st.session_state.step += 1
+
+elif st.session_state.step == 8:
+    st.header("🏥 [6단계] 전문가 연계 및 기기 업그레이드")
+    st.markdown("""
+이명이 지속된다면 전문가의 진료를 받아보는 것이 도움이 됩니다.
+필요 시 병원 예약 및 보조기기 구입 연계 서비스를 안내드립니다.
+""")
+
+    st.subheader("🔗 병원 연계 예약 시스템")
+    st.markdown("원하시는 경우 가까운 이비인후과 전문의를 예약해드립니다.")
+    st.button("병원 예약 연결하기 (준비 중)")
+
+    st.subheader("🎧 골전도 헤드셋 구매")
+    st.markdown("치료 효과를 높이기 위한 전용 골전도 기기를 안내해드립니다.")
+    st.button("기기 구매하러 가기 (준비 중)")
+
+    st.subheader("📄 진료 참고용 PDF 리포트")
+    st.markdown("이 앱에서 입력한 정보와 설문 결과를 요약하여 병원에 전달할 수 있습니다.")
+    st.button("PDF 리포트 다운로드 (준비 중)")
+
+# 사용자 이력 저장 함수
+import json
+
+def save_user_history():
+    user_data = {
+        "user": st.session_state.user_info,
+        "health": st.session_state.health_info,
+        "thi": st.session_state.thi_results,
+        "timestamp": str(datetime.datetime.now())
+    }
+    user_file = f"history_{st.session_state.user_email.replace('@', '_at_')}.json"
+    if os.path.exists(user_file):
+        with open(user_file, 'r') as f:
+            existing = json.load(f)
+    else:
+        existing = []
+    existing.append(user_data)
+    with open(user_file, 'w') as f:
+        json.dump(existing, f, indent=2, ensure_ascii=False)
+
+# 사용자 이력 불러오기
+st.sidebar.markdown("---")
+st.sidebar.subheader("📂 내 설문 이력 보기")
+if st.sidebar.button("이전 설문 불러오기"):
+    user_file = f"history_{st.session_state.user_email.replace('@', '_at_')}.json"
+    if os.path.exists(user_file):
+        with open(user_file, 'r') as f:
+            history_data = json.load(f)
+        st.session_state.history_data = history_data
+        st.sidebar.success(f"{len(history_data)}개의 이력이 불러와졌습니다.")
+    else:
+        st.sidebar.error("이전 이력이 없습니다.")
+
+if "history_data" in st.session_state:
+    st.sidebar.selectbox("📅 불러올 이력 선택", options=[f["timestamp"] for f in st.session_state.history_data], key="history_selected")
+    selected = [h for h in st.session_state.history_data if h["timestamp"] == st.session_state.history_selected][0]
+    if st.sidebar.button("이력 보기"):
+        st.header("📜 저장된 이력 보기")
+        st.subheader("👤 사용자 정보")
+        st.write(pd.DataFrame([selected["user"]]))
+        st.subheader("🩺 건강 설문")
+        st.write(pd.DataFrame.from_dict(selected["health"], orient='index', columns=["응답"]))
+        st.subheader("📝 THI 결과")
+        st.write(pd.DataFrame.from_dict(selected["thi"], orient='index', columns=["응답"]))
+
+elif st.session_state.step == 9:
+    st.header("🎧 [치료 기능] 맞춤형 음원 치료")
+    st.markdown("""
+Pitch 및 Loudness 측정 결과를 기반으로
+맞춤형 사운드가 적용됩니다. 골전도 또는 일반 이어폰으로 사용 가능합니다.
+""")
+
+    st.subheader("🎵 음원 선택")
+    st.markdown("관리자 등록 음원을 선택하거나, 본인이 원하는 음악을 업로드할 수 있습니다.")
+    user_uploaded = st.file_uploader("🎶 좋아하는 음악 업로드 (mp3, wav)", type=["mp3", "wav"])
+    if user_uploaded is not None:
+        with open(f"uploaded_{user_uploaded.name}", "wb") as f:
+            f.write(user_uploaded.read())
+        sound_files.append(f"uploaded_{user_uploaded.name}")
+    
+    sound_files = os.listdir("music") if os.path.exists("music") else []
+    selected_sound = st.selectbox("사용할 음원 선택", sound_files)
+
+    st.subheader("⚙️ Modulation 설정")
+    mod_rate = st.slider("Modulation 강도 (Hz)", 1, 20, 5)
+    st.session_state.filter_type = st.radio("필터 타입 선택", ["Amplitude Modulation", "Notch Filtering (예정)"])
+    q_value = st.slider("Notch Filter Q 값 (좁을수록 깊은 차단)", min_value=5, max_value=100, value=30)"])
+
+    st.write(f"이명 Pitch: {st.session_state.matching_info['Pitch']}, 강도: {st.session_state.tinnitus_level}")
+    st.markdown("""
+    *Pitch에 따른 notch-filtering 또는 amplitude modulation 알고리즘이 자동 적용됩니다.*
+
+    예시 알고리즘:
+    - Notch Filter: 특정 주파수 대역(예: {st.session_state.matching_info['Pitch']})를 제거하는 필터 적용
+    - Amplitude Modulation: 사인파 진폭 조절 (1~10Hz)로 이명 억제 효과 유도
+
+    추후 `pydub`, `scipy`, `librosa` 등 라이브러리를 활용하여 실시간 음원 처리 기능 추가 예정입니다.
+    """)
+
+    st.subheader("⏱ 치료 시간 설정")
+    duration = st.slider("치료 시간 (분)", 5, 60, 15)
+
+    if selected_sound:
+        if os.path.exists(f"uploaded_{selected_sound}"):
+            st.audio(f"uploaded_{selected_sound}", format='audio/mp3')
+        elif os.path.exists(f"music/{selected_sound}"):
+            st.audio(f"music/{selected_sound}", format='audio/mp3')
+
+    if st.button("치료 시작"):
+        input_path = f"music/{selected_sound}" if os.path.exists(f"music/{selected_sound}") else f"uploaded_{selected_sound}"
+        intermediate_path = "notch_filtered.wav"
+        output_path = "modulated_audio.wav"
+
+        # pitch 기반 중심 주파수 추정
+        pitch_freq_map = {
+            "125Hz": 125,
+            "250Hz": 250,
+            "500Hz": 500,
+            "1kHz": 1000,
+            "2kHz": 2000,
+            "4kHz": 4000,
+            "8kHz": 8000
+        }
+        notch_freq = pitch_freq_map.get(st.session_state.matching_info["Pitch"], 1000)
+
+        # 1. 먼저 Notch Filtering 적용
+        apply_notch_filter(input_path, intermediate_path, freq=notch_freq, q=q_value)
+
+        # 2. 이어서 Amplitude Modulation 적용
+        apply_amplitude_modulation(intermediate_path, output_path, rate=mod_rate)
+        input_path = f"music/{selected_sound}" if os.path.exists(f"music/{selected_sound}") else f"uploaded_{selected_sound}"
+        output_path = "modulated_audio.wav"
+        if st.session_state.filter_type == "Notch Filtering (예정)":
+        # pitch 기반 중심 주파수 추정
+        pitch_freq_map = {
+            "125Hz": 125,
+            "250Hz": 250,
+            "500Hz": 500,
+            "1kHz": 1000,
+            "2kHz": 2000,
+            "4kHz": 4000,
+            "8kHz": 8000
+        }
+        notch_freq = pitch_freq_map.get(st.session_state.matching_info["Pitch"], 1000)
+        apply_notch_filter(input_path, output_path, freq=notch_freq, q=q_value)
+            apply_notch_filter(input_path, output_path)
+        else:
+            apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
+        st.audio(output_path, format='audio/wav')
+        st.success(f"{duration}분 치료를 시작합니다. 음원: {selected_sound}")
+        treatment_log = {
+            "timestamp": str(datetime.datetime.now()),
+            "sound_file": selected_sound,
+            "duration": duration,
+            "pitch": st.session_state.matching_info['Pitch'],
+            "loudness": st.session_state.tinnitus_level
+        }
+        log_file = f"treatment_{st.session_state.user_email.replace('@','_at_')}.json"
+        if os.path.exists(log_file):
+            with open(log_file, 'r') as f:
+                logs = json.load(f)
+        else:
+            logs = []
+        logs.append(treatment_log)
+        with open(log_file, 'w') as f:
+            json.dump(logs, f, indent=2, ensure_ascii=False)
+        st.balloons()
+
+elif st.session_state.step == 10:
+    st.header("📊 사용자별 치료 이력 시각화")
+    log_file = f"treatment_{st.session_state.user_email.replace('@','_at_')}.json"
+    if os.path.exists(log_file):
+        with open(log_file, 'r') as f:
+            logs = json.load(f)
+        df = pd.DataFrame(logs)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+        st.subheader("📈 치료 횟수 및 누적 시간")
+        st.metric("치료 횟수", len(df))
+        st.metric("총 치료 시간 (분)", df['duration'].sum())
+
+        st.subheader("📅 치료 시간 추이")
+        df_day = df.groupby(df['timestamp'].dt.date)['duration'].sum().reset_index()
+        df_day.columns = ['날짜', '총 치료 시간']
+        st.line_chart(df_day.set_index('날짜'))
+
+        st.subheader("🎧 사용한 음원 비율")
+        st.bar_chart(df['sound_file'].value_counts())
+
+        st.subheader("📡 Pitch 별 치료 분포")
+        st.bar_chart(df['pitch'].value_counts())
+    else:
+        st.info("치료 이력이 없습니다.")
+
+    st.markdown("---")
+    if st.button("🏠 메인으로 돌아가기"):
+        st.session_state.step = 0
 
 # 결과 요약
 elif st.session_state.step == 5:
@@ -159,7 +479,11 @@ elif st.session_state.step == 5:
 
     if st.session_state.mode == "survey":
         st.subheader("🩺 건강 설문 결과")
-        st.write(pd.DataFrame([st.session_state.health_info]))
+        health_df = pd.DataFrame.from_dict(st.session_state.health_info, orient='index', columns=['응답']).reset_index()
+        health_df.columns = ['문항', '응답']
+        st.dataframe(health_df)
+        yes_no_df = health_df[health_df['응답'].isin(['예', '아니오'])]
+        st.bar_chart(yes_no_df['응답'].value_counts())
 
         st.subheader("📝 THI 설문 결과")
         thi_df = pd.DataFrame({
@@ -167,8 +491,30 @@ elif st.session_state.step == 5:
             "응답": list(st.session_state.thi_results.values())
         })
         thi_df["점수"] = thi_df["응답"].map({"아니다": 0, "가끔 그렇다": 2, "그렇다": 4})
+
+        # K-THI 하위 항목 분류 (기능적, 감정적, 재앙화)
+        F_indices = [0,1,6,7,8,12,14,17]
+        E_indices = [2,3,5,9,11,13,15,20,21,24]
+        C_indices = [4,10,16,18,19,22,23]
+
+        thi_df["하위항목"] = [
+            "기능적" if i in F_indices else "감정적" if i in E_indices else "재앙화"
+            for i in range(len(thi_df))
+        ]
+
+        st.subheader("🧠 K-THI 하위 항목별 점수")
+        for group in ["기능적", "감정적", "재앙화"]:
+            subset = thi_df[thi_df["하위항목"] == group]
+            group_score = subset["점수"].sum()
+            st.markdown(f"**{group} 점수:** {group_score}점")
+        thi_df["점수"] = thi_df["응답"].map({"아니다": 0, "가끔 그렇다": 2, "그렇다": 4})
+        
+        st.bar_chart(thi_df.groupby("하위항목")["점수"].sum())
         st.dataframe(thi_df)
         st.bar_chart(thi_df.set_index("문항")["점수"])
         total_score = thi_df["점수"].sum()
         st.markdown(f"### 총 THI 점수: **{total_score} / 100**")
         st.download_button("📥 설문 결과 다운로드 (CSV)", data=thi_df.to_csv(index=False), file_name="Tinnitus_Survey_Results.csv")
+
+    save_user_history()
+    st.success("✅ 사용자 이력이 저장되었습니다."), file_name="Tinnitus_Survey_Results.csv")
