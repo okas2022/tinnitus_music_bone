@@ -471,8 +471,8 @@ if st.session_state.filter_type == "Notch Filtering (예정)":
         apply_notch_filter(input_path, intermediate_path, freq=notch_freq, q=q_value)
         apply_amplitude_modulation(intermediate_path, output_path, rate=mod_rate)
 else:
-            apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
-        st.audio(output_path, format='audio/wav')
+    apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
+    st.audio(output_path, format='audio/wav')
         st.success(f"{duration}분 치료를 시작합니다. 음원: {selected_sound}")
         treatment_log = {
             "timestamp": str(datetime.datetime.now()),
