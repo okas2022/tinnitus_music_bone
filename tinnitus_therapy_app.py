@@ -143,9 +143,13 @@ elif st.session_state.step == 1.5:
             st.session_state.tinnitus_level = 5
         elif avg_thresh < 80:
             st.session_state.tinnitus_level = 7
-else:
-    st.session_state.tinnitus_level = 9
-    st.markdown(f"👉 평균 청력 역치: {avg_thresh:.1f} dB → 이명 강도 조정: {st.session_state.tinnitus_level}")
+        else:
+            st.session_state.tinnitus_level = 9
+
+        st.markdown(f"👉 평균 청력 역치: {avg_thresh:.1f} dB → 이명 강도 조정: {st.session_state.tinnitus_level}")
+
+        if st.button("다음 (난청 설문)"):
+            st.session_state.step = 2
 
     if st.button("다음 (난청 설문)"):
         st.session_state.step = 2
@@ -272,15 +276,6 @@ import numpy as np
 import scipy.signal
 
 # Notch filtering 함수 추가
-
-def apply_notch_filter(input_path, output_path, freq=1000, q=30):
-    sound = AudioSegment.from_file(input_path)
-    samples = np.array(sound.get_array_of_samples())
-    fs = sound.frame_rate
-    b, a = scipy.signal.iirnotch(freq / (fs / 2), q)
-    filtered = scipy.signal.filtfilt(b, a, samples).astype(np.int16)
-    filtered_audio = sound._spawn(filtered.tobytes())
-    filtered_audio.export(output_path, format="wav")
 
 def apply_notch_filter(input_path, output_path, freq=1000, q=30):
     sound = AudioSegment.from_file(input_path)
@@ -484,9 +479,6 @@ notch_freq = pitch_freq_map.get(st.session_state.matching_info["Pitch"], 1000)
 if st.session_state.filter_type == "Notch Filtering (예정)":
     apply_notch_filter(input_path, intermediate_path, freq=notch_freq, q=q_value)
     apply_amplitude_modulation(intermediate_path, output_path, rate=mod_rate)
-else:
-    apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
-    apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
         else:
             apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
         st.audio(output_path, format='audio/wav')
