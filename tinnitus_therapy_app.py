@@ -501,7 +501,6 @@ Pitch 및 Loudness 측정 결과를 기반으로
     }
     notch_freq = pitch_freq_map.get(st.session_state.matching_info["Pitch"], 1000)
     apply_notch_filter(input_path, output_path, freq=notch_freq, q=q_value)
-            apply_notch_filter(input_path, output_path)
         else:
             apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
         st.audio(output_path, format='audio/wav')
@@ -609,3 +608,5 @@ elif st.session_state.step == 5:
 
     save_user_history()
     st.success("✅ 사용자 이력이 저장되었습니다.")
+
+    
