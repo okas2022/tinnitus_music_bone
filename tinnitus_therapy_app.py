@@ -143,7 +143,7 @@ elif st.session_state.step == 1.5:
             st.session_state.tinnitus_level = 5
         elif avg_thresh < 80:
             st.session_state.tinnitus_level = 7
-        else:
+else:
             st.session_state.tinnitus_level = 9
         st.markdown(f"👉 평균 청력 역치: {avg_thresh:.1f} dB → 이명 강도 조정: {st.session_state.tinnitus_level}")
 
@@ -467,30 +467,9 @@ Pitch 및 Loudness 측정 결과를 기반으로
         st.markdown("⏯ **치료 시작 전 필터 테스트 시청**")
         st.audio(output_path, format='audio/wav')
         input_path = f"music/{selected_sound}" if os.path.exists(f"music/{selected_sound}") else f"uploaded_{selected_sound}"
-        intermediate_path = "notch_filtered.wav"
-        output_path = "modulated_audio.wav"
-
-        # pitch 기반 중심 주파수 추정
-        pitch_freq_map = {
-            "125Hz": 125,
-            "250Hz": 250,
-            "500Hz": 500,
-            "1kHz": 1000,
-            "2kHz": 2000,
-            "4kHz": 4000,
-            "8kHz": 8000
-        }
-        notch_freq = pitch_freq_map.get(st.session_state.matching_info["Pitch"], 1000)
-
-        # 1. 먼저 Notch Filtering 적용
-        apply_notch_filter(input_path, intermediate_path, freq=notch_freq, q=q_value)
-
-        # 2. 이어서 Amplitude Modulation 적용
-        apply_amplitude_modulation(intermediate_path, output_path, rate=mod_rate)
-        input_path = f"music/{selected_sound}" if os.path.exists(f"music/{selected_sound}") else f"uploaded_{selected_sound}"
-        output_path = "modulated_audio.wav"
-        input_path = f"music/{selected_sound}" if os.path.exists(f"music/{selected_sound}") else f"uploaded_{selected_sound}"
+intermediate_path = "notch_filtered.wav"
 output_path = "modulated_audio.wav"
+
 pitch_freq_map = {
     "125Hz": 125,
     "250Hz": 250,
@@ -501,8 +480,10 @@ pitch_freq_map = {
     "8kHz": 8000
 }
 notch_freq = pitch_freq_map.get(st.session_state.matching_info["Pitch"], 1000)
+
 if st.session_state.filter_type == "Notch Filtering (예정)":
-    apply_notch_filter(input_path, output_path, freq=notch_freq, q=q_value)
+    apply_notch_filter(input_path, intermediate_path, freq=notch_freq, q=q_value)
+    apply_amplitude_modulation(intermediate_path, output_path, rate=mod_rate)
 else:
     apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
     apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
