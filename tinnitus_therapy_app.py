@@ -474,24 +474,7 @@ else:
     apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
     st.audio(output_path, format='audio/wav')
     st.success(f"{duration}분 치료를 시작합니다. 음원: {selected_sound}")
-    treatment_log = {
-    "timestamp": str(datetime.datetime.now()),
-    "sound_file": selected_sound,
-    "duration": duration,
-    "pitch": st.session_state.matching_info['Pitch'],
-    "loudness": st.session_state.tinnitus_level
-}
-log_file = f"treatment_{st.session_state.user_email.replace('@','_at_')}.json"
-        if os.path.exists(log_file):
-            with open(log_file, 'r') as f:
-                logs = json.load(f)
-        else:
-            logs = []
-        logs.append(treatment_log)
-st.session_state.treatment_history.append(treatment_log)
-        with open(log_file, 'w') as f:
-            json.dump(logs, f, indent=2, ensure_ascii=False)
-        st.balloons()
+    
 
 elif st.session_state.step == 10:
     st.header("📊 이명 치료 효과 변화 분석")
