@@ -5,10 +5,18 @@ st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
 
 import pandas as pd
 import datetime
-
-# 로그인 기능
 import os
 import csv
+import json
+from pydub import AudioSegment
+import numpy as np
+import scipy.signal
+
+# 🔽 step 상태 초기화
+if "step" not in st.session_state:
+    st.session_state.step = 0
+
+# 로그인 기능
 user_file = "user_credentials.csv"
 if not os.path.exists(user_file):
     with open(user_file, mode="w", newline="") as f:
@@ -50,16 +58,44 @@ st.title("🎵 음악으로 이명 치료하다")
 st.markdown("## 🎧 Tinnitus Sound Therapy App")
 st.markdown("<style> @keyframes fadein { from {opacity:0;} to {opacity:1;} } .slide { animation: fadein 1s ease-in-out; } </style>", unsafe_allow_html=True)
 
+# 이후 코드에서는 사용자 입력, 설문지, 청력검사, 이명 설문, THI, 음원 설정, 치료 루틴, 이력 저장/조회 등을 단계적으로 구성해야 함.
+# 예시: st.session_state.step 값에 따라 각 기능 실행. 필요한 경우 추가 기능 모듈화를 고려.
 
-slide_images = [
-    ("https://cdn.pixabay.com/photo/2017/03/15/11/18/music-2147801_960_720.jpg", "Step 1: 음악을 통한 이명 이해"),
-    ("https://cdn.pixabay.com/photo/2016/11/29/06/18/sound-1868958_960_720.jpg", "Step 2: 개인별 Pitch와 강도 분석"),
-    ("https://cdn.pixabay.com/photo/2015/01/09/11/11/headphones-594183_960_720.jpg", "Step 3: 골전도 디바이스로 소리치료")
-]
-slide_idx = st.slider("슬라이드 보기", 0, len(slide_images)-1, 0)
-img_url, caption = slide_images[slide_idx]
-st.image(img_url, caption=caption, use_column_width=True)
+# 🔧 오류 방지를 위한 초기 세션 변수들 정의
+for var, default in {
+    "mode": None,
+    "tinnitus_level": 5,
+    "audio_file": None,
+    "user_info": {},
+    "health_info": {},
+    "thi_results": {},
+    "treatment_history": []
+}.items():
+    if var not in st.session_state:
+        st.session_state[var] = default
 
+# 🎛️ 필터 함수 정의
+
+def apply_notch_filter(input_path, output_path, freq=1000, q=30):
+    sound = AudioSegment.from_file(input_path)
+    samples = np.array(sound.get_array_of_samples())
+    fs = sound.frame_rate
+    b, a = scipy.signal.iirnotch(freq / (fs / 2), q)
+    filtered = scipy.signal.filtfilt(b, a, samples).astype(np.int16)
+    filtered_audio = sound._spawn(filtered.tobytes())
+    filtered_audio.export(output_path, format="wav")
+
+def apply_amplitude_modulation(input_path, output_path, rate=5):
+    sound = AudioSegment.from_file(input_path)
+    samples = np.array(sound.get_array_of_samples())
+    fs = sound.frame_rate
+    duration = len(samples) / fs
+    t = np.linspace(0, duration, num=len(samples))
+    modulator = 0.5 * (1 + np.sin(2 * np.pi * rate * t))
+    modulated = samples * modulator
+    modulated = np.clip(modulated, -2**15, 2**15-1)
+    modulated_audio = sound._spawn(modulated.astype(np.int16).tobytes())
+    modulated_audio.export(output_path, format="wav")
 # 온보딩 단계 (Step -1)
 if st.session_state.step == -1:
     st.header("당신의 이명을 이해합니다")
@@ -481,4 +517,3 @@ else:
     
 
 # 결과 요약
-
