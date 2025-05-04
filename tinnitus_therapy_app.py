@@ -1,4 +1,8 @@
 import streamlit as st
+
+# ✅ 반드시 최상단에 위치해야 함!
+st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
+
 import pandas as pd
 import datetime
 
@@ -20,6 +24,7 @@ if st.sidebar.button("회원가입"):
         writer = csv.writer(f)
         writer.writerow([new_email, new_pw])
     st.sidebar.success("회원가입 완료. 로그인 해주세요!")
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -41,11 +46,10 @@ if not st.session_state.authenticated:
         st.error("이메일 또는 비밀번호가 올바르지 않습니다.")
     st.stop()
 
-# 앱 초기 설정
-st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
 st.title("🎵 음악으로 이명 치료하다")
 st.markdown("## 🎧 Tinnitus Sound Therapy App")
 st.markdown("<style> @keyframes fadein { from {opacity:0;} to {opacity:1;} } .slide { animation: fadein 1s ease-in-out; } </style>", unsafe_allow_html=True)
+
 
 slide_images = [
     ("https://cdn.pixabay.com/photo/2017/03/15/11/18/music-2147801_960_720.jpg", "Step 1: 음악을 통한 이명 이해"),
