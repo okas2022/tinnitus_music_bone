@@ -505,7 +505,6 @@ if st.session_state.filter_type == "Notch Filtering (예정)":
     apply_notch_filter(input_path, output_path, freq=notch_freq, q=q_value)
 else:
     apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
-else:
     apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
         else:
             apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
