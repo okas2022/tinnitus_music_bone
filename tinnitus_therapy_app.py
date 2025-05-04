@@ -45,16 +45,16 @@ if not st.session_state.authenticated:
 st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
 st.title("🎵 음악으로 이명 치료하다")
 st.markdown("## 🎧 Tinnitus Sound Therapy App")
-    st.markdown("<style> @keyframes fadein { from {opacity:0;} to {opacity:1;} } .slide { animation: fadein 1s ease-in-out; } </style>", unsafe_allow_html=True)
+st.markdown("<style> @keyframes fadein { from {opacity:0;} to {opacity:1;} } .slide { animation: fadein 1s ease-in-out; } </style>", unsafe_allow_html=True)
 
-    slide_images = [
-        ("https://cdn.pixabay.com/photo/2017/03/15/11/18/music-2147801_960_720.jpg", "Step 1: 음악을 통한 이명 이해"),
-        ("https://cdn.pixabay.com/photo/2016/11/29/06/18/sound-1868958_960_720.jpg", "Step 2: 개인별 Pitch와 강도 분석"),
-        ("https://cdn.pixabay.com/photo/2015/01/09/11/11/headphones-594183_960_720.jpg", "Step 3: 골전도 디바이스로 소리치료")
-    ]
-    slide_idx = st.slider("슬라이드 보기", 0, len(slide_images)-1, 0)
-    img_url, caption = slide_images[slide_idx]
-    st.image(img_url, caption=caption, use_column_width=True)
+slide_images = [
+    ("https://cdn.pixabay.com/photo/2017/03/15/11/18/music-2147801_960_720.jpg", "Step 1: 음악을 통한 이명 이해"),
+    ("https://cdn.pixabay.com/photo/2016/11/29/06/18/sound-1868958_960_720.jpg", "Step 2: 개인별 Pitch와 강도 분석"),
+    ("https://cdn.pixabay.com/photo/2015/01/09/11/11/headphones-594183_960_720.jpg", "Step 3: 골전도 디바이스로 소리치료")
+]
+slide_idx = st.slider("슬라이드 보기", 0, len(slide_images)-1, 0)
+img_url, caption = slide_images[slide_idx]
+st.image(img_url, caption=caption, use_column_width=True)
 
 # 온보딩 단계 (Step -1)
 if st.session_state.step == -1:
