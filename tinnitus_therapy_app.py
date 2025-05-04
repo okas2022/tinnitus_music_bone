@@ -431,7 +431,7 @@ Pitch 및 Loudness 측정 결과를 기반으로
     st.subheader("⚙️ Modulation 설정")
     mod_rate = st.slider("Modulation 강도 (Hz)", 1, 20, 5)
     st.session_state.filter_type = st.radio("필터 타입 선택", ["Amplitude Modulation", "Notch Filtering (예정)"])
-    q_value = st.slider("Notch Filter Q 값 (좁을수록 깊은 차단)", min_value=5, max_value=100, value=30)"])
+    q_value = st.slider("Notch Filter Q 값 (좁을수록 깊은 차단)", min_value=5, max_value=100, value=30)
 
     st.write(f"이명 Pitch: {st.session_state.matching_info['Pitch']}, 강도: {st.session_state.tinnitus_level}")
     st.markdown("""
@@ -454,6 +454,17 @@ Pitch 및 Loudness 측정 결과를 기반으로
             st.audio(f"music/{selected_sound}", format='audio/mp3')
 
     if st.button("치료 시작"):
+        st.subheader("🔊 음량 조절 및 피드백")
+        volume = st.slider("음량 (0.0 ~ 1.0)", 0.0, 1.0, 0.8, step=0.1)
+        feedback = st.radio("치료 후 느낌을 선택해주세요", ["개선됨", "변화 없음", "악화됨"])
+        st.session_state.feedback_log = {
+            "volume": volume,
+            "feedback": feedback,
+            "note": st.text_area("자유롭게 치료 후 느낀 점을 작성해주세요 (이명 일기)", placeholder="오늘 치료를 마친 후 느낀 점을 적어보세요...")
+        }
+        st.audio(input_path, format='audio/wav')
+        st.markdown("⏯ **치료 시작 전 필터 테스트 시청**")
+        st.audio(output_path, format='audio/wav')
         input_path = f"music/{selected_sound}" if os.path.exists(f"music/{selected_sound}") else f"uploaded_{selected_sound}"
         intermediate_path = "notch_filtered.wav"
         output_path = "modulated_audio.wav"
@@ -519,6 +530,8 @@ elif st.session_state.step == 10:
     if os.path.exists(log_file):
         with open(log_file, 'r') as f:
             logs = json.load(f)
+    if 'feedback_log' in st.session_state:
+        treatment_log.update(st.session_state.feedback_log)
         df = pd.DataFrame(logs)
         df['timestamp'] = pd.to_datetime(df['timestamp'])
 
@@ -536,6 +549,12 @@ elif st.session_state.step == 10:
 
         st.subheader("📡 Pitch 별 치료 분포")
         st.bar_chart(df['pitch'].value_counts())
+
+        st.subheader("📝 치료 후 사용자 이명 일기")
+        if 'note' in df.columns:
+            for idx, row in df[['timestamp', 'note']].dropna().iterrows():
+                st.markdown(f"**📅 {row['timestamp']}**")
+                st.write(row['note'])
     else:
         st.info("치료 이력이 없습니다.")
 
