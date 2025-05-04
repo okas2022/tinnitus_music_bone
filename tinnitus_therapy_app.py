@@ -127,16 +127,10 @@ elif st.session_state.step == 1.5:
             heard = st.radio(f"{t}dB에서 들리셨나요?", ["예", "아니오"], key=key)
             hearing_result[key] = heard
     st.session_state.health_info['pure_tone_test'] = hearing_result
-    # 평균 최소 들림역치 계산
-    threshold_values = []
-    for k, v in hearing_result.items():
-        if v == "예":
-            freq = int(k.split("_")[1])
-            db = int(k.split("_")[2])
-            threshold_values.append((freq, db))
+    threshold_values = [(int(k.split("_")[1]), int(k.split("_")[2])) for k, v in hearing_result.items() if v == "예"]
     if threshold_values:
         df_thresh = pd.DataFrame(threshold_values, columns=["freq", "db"])
-        avg_thresh = df_thresh.groupby("freq")['db'].min().mean()
+        avg_thresh = df_thresh.groupby("freq")["db"].min().mean()
         if avg_thresh < 40:
             st.session_state.tinnitus_level = 3
         elif avg_thresh < 60:
@@ -145,9 +139,7 @@ elif st.session_state.step == 1.5:
             st.session_state.tinnitus_level = 7
         else:
             st.session_state.tinnitus_level = 9
-
         st.markdown(f"👉 평균 청력 역치: {avg_thresh:.1f} dB → 이명 강도 조정: {st.session_state.tinnitus_level}")
-
         if st.button("다음 (난청 설문)"):
             st.session_state.step = 2
 
@@ -172,8 +164,6 @@ elif st.session_state.step == 2:
     if col2.button("다음 (어지러움 설문)"):
         st.session_state.health_info.update(hearing_responses)
         st.session_state.step = 2.1
-        st.session_state.health_info.update(hearing_responses)
-        st.session_state.step = 2.1
 
 elif st.session_state.step == 2.1:
     st.header("🌀 어지러움/균형 관련 설문")
@@ -190,8 +180,6 @@ elif st.session_state.step == 2.1:
     if col1.button("이전 (난청 설문)"):
         st.session_state.step = 2
     if col2.button("다음 (만성질환 설문)"):
-        st.session_state.health_info.update(dizziness_responses)
-        st.session_state.step = 2.2
         st.session_state.health_info.update(dizziness_responses)
         st.session_state.step = 2.2
 
@@ -269,11 +257,14 @@ elif st.session_state.step == 3:
         st.session_state.step += 1
 
 # 치료 시작
+
+# 치료 결과 분석용 데이터 저장 리스트 초기화
+if 'treatment_history' not in st.session_state:
+    st.session_state.treatment_history = []
 from pydub import AudioSegment
 import scipy.signal
 import numpy as np
 import numpy as np
-import scipy.signal
 
 # Notch filtering 함수 추가
 
@@ -477,9 +468,9 @@ pitch_freq_map = {
 notch_freq = pitch_freq_map.get(st.session_state.matching_info["Pitch"], 1000)
 
 if st.session_state.filter_type == "Notch Filtering (예정)":
-    apply_notch_filter(input_path, intermediate_path, freq=notch_freq, q=q_value)
-    apply_amplitude_modulation(intermediate_path, output_path, rate=mod_rate)
-        else:
+        apply_notch_filter(input_path, intermediate_path, freq=notch_freq, q=q_value)
+        apply_amplitude_modulation(intermediate_path, output_path, rate=mod_rate)
+else:
             apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
         st.audio(output_path, format='audio/wav')
         st.success(f"{duration}분 치료를 시작합니다. 음원: {selected_sound}")
@@ -497,11 +488,30 @@ if st.session_state.filter_type == "Notch Filtering (예정)":
         else:
             logs = []
         logs.append(treatment_log)
+st.session_state.treatment_history.append(treatment_log)
         with open(log_file, 'w') as f:
             json.dump(logs, f, indent=2, ensure_ascii=False)
         st.balloons()
 
 elif st.session_state.step == 10:
+    st.header("📊 이명 치료 효과 변화 분석")
+    if st.session_state.treatment_history:
+        df = pd.DataFrame(st.session_state.treatment_history)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+        st.subheader("📉 치료 전후 이명 강도 변화")
+        st.line_chart(df.set_index('timestamp')['loudness'])
+
+        st.subheader("📈 치료 시간에 따른 변화 추이")
+        df_day = df.groupby(df['timestamp'].dt.date).agg({'duration': 'sum', 'loudness': 'mean'}).reset_index()
+        df_day.columns = ['날짜', '총 치료 시간', '평균 이명 강도']
+        st.line_chart(df_day.set_index('날짜'))
+
+        st.subheader("📋 치료 피드백 요약")
+        if 'feedback' in df.columns:
+            st.bar_chart(df['feedback'].value_counts())
+    else:
+        st.info("아직 치료 이력이 부족합니다.")
     st.header("📊 사용자별 치료 이력 시각화")
     log_file = f"treatment_{st.session_state.user_email.replace('@','_at_')}.json"
     if os.path.exists(log_file):
