@@ -43,7 +43,18 @@ if not st.session_state.authenticated:
 
 # 앱 초기 설정
 st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
-st.title("🎧 Tinnitus Sound Therapy App")
+st.title("🎵 음악으로 이명 치료하다")
+st.markdown("## 🎧 Tinnitus Sound Therapy App")
+    st.markdown("<style> @keyframes fadein { from {opacity:0;} to {opacity:1;} } .slide { animation: fadein 1s ease-in-out; } </style>", unsafe_allow_html=True)
+
+    slide_images = [
+        ("https://cdn.pixabay.com/photo/2017/03/15/11/18/music-2147801_960_720.jpg", "Step 1: 음악을 통한 이명 이해"),
+        ("https://cdn.pixabay.com/photo/2016/11/29/06/18/sound-1868958_960_720.jpg", "Step 2: 개인별 Pitch와 강도 분석"),
+        ("https://cdn.pixabay.com/photo/2015/01/09/11/11/headphones-594183_960_720.jpg", "Step 3: 골전도 디바이스로 소리치료")
+    ]
+    slide_idx = st.slider("슬라이드 보기", 0, len(slide_images)-1, 0)
+    img_url, caption = slide_images[slide_idx]
+    st.image(img_url, caption=caption, use_column_width=True)
 
 # 온보딩 단계 (Step -1)
 if st.session_state.step == -1:
@@ -102,10 +113,46 @@ if st.session_state.step == 1:
         }
         st.session_state.step += 1
 
+# 순음 청력검사
+elif st.session_state.step == 1.5:
+    st.header("🎧 순음 청력검사")
+    st.markdown("500Hz, 2000Hz, 4000Hz, 8000Hz에서 20~80dB의 소리에 반응하는지 입력해주세요.")
+    thresholds = [20, 40, 60, 80]
+    freqs = [500, 2000, 4000, 8000]
+    hearing_result = {}
+    for f in freqs:
+        st.subheader(f"주파수: {f}Hz")
+        for t in thresholds:
+            key = f"hearing_{f}_{t}"
+            heard = st.radio(f"{t}dB에서 들리셨나요?", ["예", "아니오"], key=key)
+            hearing_result[key] = heard
+    st.session_state.health_info['pure_tone_test'] = hearing_result
+    # 평균 최소 들림역치 계산
+    threshold_values = []
+    for k, v in hearing_result.items():
+        if v == "예":
+            freq = int(k.split("_")[1])
+            db = int(k.split("_")[2])
+            threshold_values.append((freq, db))
+    if threshold_values:
+        df_thresh = pd.DataFrame(threshold_values, columns=["freq", "db"])
+        avg_thresh = df_thresh.groupby("freq")['db'].min().mean()
+        if avg_thresh < 40:
+            st.session_state.tinnitus_level = 3
+        elif avg_thresh < 60:
+            st.session_state.tinnitus_level = 5
+        elif avg_thresh < 80:
+            st.session_state.tinnitus_level = 7
+        else:
+            st.session_state.tinnitus_level = 9
+        st.markdown(f"👉 평균 청력 역치: {avg_thresh:.1f} dB → 이명 강도 조정: {st.session_state.tinnitus_level}")
+
+    if st.button("다음 (난청 설문)"):
+        st.session_state.step = 2
+
 # 건강 설문
 elif st.session_state.step == 2:
-    st.header("🩺 건강 설문")
-
+    st.header("🦻 난청 관련 설문")
     hearing_questions = [
         "양쪽 귀 중 한쪽 귀만 잘 들리시나요?",
         "일상 대화 중 TV 또는 라디오 음량을 높여야 하나요?",
@@ -114,7 +161,18 @@ elif st.session_state.step == 2:
         "전화 통화 시 상대방 말소리를 듣기 어려운 편인가요?",
         "최근 청력 저하를 느낀 적이 있나요?"
     ]
+    hearing_responses = {q: st.radio(q, ["예", "아니오"], key=f"hear_{i}") for i, q in enumerate(hearing_questions)}
+    col1, col2 = st.columns([1,1])
+    if col1.button("이전 (사용자 정보)"):
+        st.session_state.step = 1
+    if col2.button("다음 (어지러움 설문)"):
+        st.session_state.health_info.update(hearing_responses)
+        st.session_state.step = 2.1
+        st.session_state.health_info.update(hearing_responses)
+        st.session_state.step = 2.1
 
+elif st.session_state.step == 2.1:
+    st.header("🌀 어지러움/균형 관련 설문")
     dizziness_questions = [
         "최근 1개월 내 어지러움을 느끼신 적이 있나요?",
         "자세를 바꿀 때 순간적으로 어지러움을 느끼시나요?",
@@ -123,7 +181,18 @@ elif st.session_state.step == 2:
         "어지럼증으로 일상 활동에 제한이 있었나요?",
         "최근 쓰러지거나 낙상한 경험이 있으신가요?"
     ]
+    dizziness_responses = {q: st.radio(q, ["예", "아니오"], key=f"dizzy_{i}") for i, q in enumerate(dizziness_questions)}
+    col1, col2 = st.columns([1,1])
+    if col1.button("이전 (난청 설문)"):
+        st.session_state.step = 2
+    if col2.button("다음 (만성질환 설문)"):
+        st.session_state.health_info.update(dizziness_responses)
+        st.session_state.step = 2.2
+        st.session_state.health_info.update(dizziness_responses)
+        st.session_state.step = 2.2
 
+elif st.session_state.step == 2.2:
+    st.header("🧬 만성질환 및 생활습관 설문")
     chronic_questions = [
         ("고혈압 진단을 받은 적이 있나요?", ["예", "아니오"]),
         ("당뇨병 또는 혈당 조절 장애가 있나요?", ["예", "아니오"]),
@@ -135,17 +204,20 @@ elif st.session_state.step == 2:
         ("음주 습관", ["주 1회 이하", "주 2~3회", "거의 매일"]),
         ("규칙적인 운동을 하고 계신가요?", ["예", "아니오"])
     ]
-
-    hearing_responses = {q: st.radio(q, ["예", "아니오"], key=f"hear_{i}") for i, q in enumerate(hearing_questions)}
-    dizziness_responses = {q: st.radio(q, ["예", "아니오"], key=f"dizzy_{i}") for i, q in enumerate(dizziness_questions)}
     chronic_responses = {}
     for i, (q, opt) in enumerate(chronic_questions):
         if opt == "number":
             chronic_responses[q] = st.number_input(q, min_value=0, max_value=24, key=f"chronic_{i}")
         else:
             chronic_responses[q] = st.radio(q, opt, key=f"chronic_{i}")
-
-    if st.button("다음 (THI 설문)"):
+    col1, col2 = st.columns([1,1])
+    if col1.button("이전 (어지러움 설문)"):
+        st.session_state.step = 2.1
+    if col2.button("다음 (THI 설문)"):
+        st.session_state.health_info.update(chronic_responses)
+        st.session_state.step = 3
+        st.session_state.health_info.update(chronic_responses)
+        st.session_state.step = 3
         st.session_state.health_info = {
             **hearing_responses,
             **dizziness_responses,
