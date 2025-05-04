@@ -608,4 +608,6 @@ elif st.session_state.step == 5:
         st.download_button("📥 설문 결과 다운로드 (CSV)", data=thi_df.to_csv(index=False), file_name="Tinnitus_Survey_Results.csv")
 
     save_user_history()
-    st.success("✅ 사용자 이력이 저장되었습니다."), file_name="Tinnitus_Survey_Results.csv")
+    st.success("✅ 사용자 이력이 저장되었습니다.")
+
+    
