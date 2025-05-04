@@ -474,7 +474,7 @@ else:
     apply_amplitude_modulation(input_path, output_path, rate=mod_rate)
     st.audio(output_path, format='audio/wav')
     st.success(f"{duration}분 치료를 시작합니다. 음원: {selected_sound}")
-        treatment_log = {
+    treatment_log = {
             "timestamp": str(datetime.datetime.now()),
             "sound_file": selected_sound,
             "duration": duration,
