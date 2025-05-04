@@ -292,7 +292,7 @@ def apply_notch_filter(input_path, output_path, freq=1000, q=30):
     filtered_audio.export(output_path, format="wav")
 
 # 간단한 amplitude modulation 예시 함수
-def apply_amplitude_modulation(input_path, output_path, rate=mod_rate):
+def apply_amplitude_modulation(input_path, output_path, rate=5):
     sound = AudioSegment.from_file(input_path)
     samples = np.array(sound.get_array_of_samples())
     fs = sound.frame_rate
@@ -303,7 +303,8 @@ def apply_amplitude_modulation(input_path, output_path, rate=mod_rate):
     modulated = np.clip(modulated, -2**15, 2**15-1)
     modulated_audio = sound._spawn(modulated.astype(np.int16).tobytes())
     modulated_audio.export(output_path, format="wav")
-elif st.session_state.step == 4:
+
+if st.session_state.step == 4:
     st.header("🔎 [2단계] 맞춤 치료 설정")
     st.markdown("""
     당신만의 이명 소리 특성을 기반으로 맞춤형 사운드 처방이 제공됩니다.
@@ -609,5 +610,3 @@ elif st.session_state.step == 5:
 
     save_user_history()
     st.success("✅ 사용자 이력이 저장되었습니다.")
-
-    
