@@ -4,9 +4,28 @@ import datetime
 import os
 import csv
 import json
+from pydub import AudioSegment
+import scipy.signal
+import numpy as np
 
 # ✅ 반드시 첫 줄에 위치해야 함!
 st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
+
+# 세션 상태 초기화
+if "mode" not in st.session_state:
+    st.session_state.mode = None
+if "step" not in st.session_state:
+    st.session_state.step = 0
+if "tinnitus_level" not in st.session_state:
+    st.session_state.tinnitus_level = 5
+if "audio_file" not in st.session_state:
+    st.session_state.audio_file = None
+if "user_info" not in st.session_state:
+    st.session_state.user_info = {}
+if "health_info" not in st.session_state:
+    st.session_state.health_info = {}
+if "thi_results" not in st.session_state:
+    st.session_state.thi_results = {}
 
 # 앱 제목 및 안내
 st.title("🎵 음악으로 이명 치료하다")
@@ -21,29 +40,56 @@ if not os.path.exists(data_file):
         writer.writerow(["이름", "전화번호", "이메일", "생년월일", "저장일시"])
 
 # 사용자 정보 입력 및 저장
-st.header("👤 사용자 정보 입력")
-name = st.text_input("이름")
-phone = st.text_input("전화번호")
-email = st.text_input("이메일 (선택사항)")
-birth = st.date_input("생년월일", value=datetime.date(1990, 1, 1))
+if st.session_state.step == 0:
+    st.header("👤 사용자 정보 입력")
+    name = st.text_input("이름")
+    phone = st.text_input("전화번호")
+    email = st.text_input("이메일 (선택사항)")
+    birth = st.date_input("생년월일", value=datetime.date(1990, 1, 1))
 
-if st.button("정보 저장 및 다음으로 이동"):
-    with open(data_file, mode="a", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([name, phone, email, str(birth), str(datetime.datetime.now())])
-    st.success("사용자 정보가 저장되었습니다.")
-    st.session_state.step = 1  # 다음 단계로 이동을 위한 상태 설정
+    if st.button("정보 저장 및 다음으로 이동"):
+        with open(data_file, mode="a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([name, phone, email, str(birth), str(datetime.datetime.now())])
+        st.session_state.user_info = {
+            "이름": name,
+            "전화번호": phone,
+            "이메일": email,
+            "생년월일": str(birth)
+        }
+        st.success("사용자 정보가 저장되었습니다.")
+        st.session_state.step = 1
+
+# 설문
+if st.session_state.step == 1:
+    st.header("📋 이명 관련 간단 설문")
+    q1 = st.radio("최근 1주일 간 이명으로 인해 불편함을 느끼셨나요?", ["예", "아니오"])
+    q2 = st.radio("하루 중 이명이 가장 심하게 느껴지는 시간대는 언제인가요?", ["아침", "낮", "저녁", "밤", "일관되게 지속됨"])
+    q3 = st.slider("현재 느끼는 이명의 강도는 어느 정도인가요? (0=전혀 없음, 10=매우 심함)", 0, 10, 5)
+
+    if st.button("설문 저장 및 다음 단계로 이동"):
+        st.session_state.survey_result = {
+            "이명 불편 여부": q1,
+            "이명 시간대": q2,
+            "이명 강도": q3,
+            "응답 시간": str(datetime.datetime.now())
+        }
+        st.success("설문이 저장되었습니다. 다음 단계로 이동하세요.")
+        st.session_state.step = 2
+
+# 설문 결과 확인
+if st.session_state.step == 2:
+    st.header("📊 설문 결과 확인")
+    st.write(pd.DataFrame([st.session_state.survey_result]))
+    st.info("다음 단계 기능은 추후 추가 가능합니다.")
 
 # 저장된 사용자 목록 확인
-if st.checkbox("저장된 사용자 보기"):
-    df = pd.read_csv(data_file)
-    st.dataframe(df)
-
-# 다음 단계 안내 버튼
-if "step" in st.session_state and st.session_state.step == 1:
-    if st.button("👉 다음 단계로 이동하기"):
-        st.info("여기에 설문 또는 치료 기능이 이어질 수 있습니다.")
-
+with st.expander("📁 저장된 사용자 목록 보기"):
+    if os.path.exists(data_file):
+        df = pd.read_csv(data_file)
+        st.dataframe(df)
+    else:
+        st.warning("아직 저장된 사용자가 없습니다.")
 
 # 앱 초기 설정
 st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
