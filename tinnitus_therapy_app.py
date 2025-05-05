@@ -1,45 +1,41 @@
 import streamlit as st
 import pandas as pd
 import datetime
-
-# 로그인 기능
 import os
 import csv
-user_file = "user_credentials.csv"
-if not os.path.exists(user_file):
-    with open(user_file, mode="w", newline="") as f:
+import json
+
+# 앱 초기 설정
+st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
+st.title("🎵 음악으로 이명 치료하다")
+st.markdown("## 🎧 Tinnitus Sound Therapy App")
+st.markdown("<style> @keyframes fadein { from {opacity:0;} to {opacity:1;} } .slide { animation: fadein 1s ease-in-out; } </style>", unsafe_allow_html=True)
+
+# 사용자 정보 저장 파일 경로
+data_file = "user_data.csv"
+if not os.path.exists(data_file):
+    with open(data_file, mode="w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["email", "password"])
+        writer.writerow(["이름", "전화번호", "이메일", "생년월일", "저장일시"])
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("🔐 계정이 없으신가요?")
-new_email = st.sidebar.text_input("신규 이메일", key="reg_email")
-new_pw = st.sidebar.text_input("신규 비밀번호", type="password", key="reg_pw")
-if st.sidebar.button("회원가입"):
-    with open(user_file, mode="a", newline="") as f:
+# 사용자 정보 입력 및 저장
+st.header("👤 사용자 정보 입력")
+name = st.text_input("이름")
+phone = st.text_input("전화번호")
+email = st.text_input("이메일 (선택사항)")
+birth = st.date_input("생년월일", value=datetime.date(1990, 1, 1))
+
+if st.button("정보 저장"):
+    with open(data_file, mode="a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([new_email, new_pw])
-    st.sidebar.success("회원가입 완료. 로그인 해주세요!")
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
+        writer.writerow([name, phone, email, str(birth), str(datetime.datetime.now())])
+    st.success("사용자 정보가 저장되었습니다.")
 
-if not st.session_state.authenticated:
-    st.title("🔐 로그인")
-    email = st.text_input("이메일을 입력하세요")
-    password = st.text_input("비밀번호", type="password")
+# 저장된 사용자 목록 확인
+if st.checkbox("저장된 사용자 보기"):
+    df = pd.read_csv(data_file)
+    st.dataframe(df)
 
-    if st.button("로그인"):
-        with open(user_file, newline="") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row["email"] == email and row["password"] == password:
-                    st.session_state.authenticated = True
-                    st.session_state.user_email = email
-                    st.success(f"{email} 님, 환영합니다!")
-                    st.rerun()
-    if not st.session_state.authenticated:
-        st.error("이메일 또는 비밀번호가 올바르지 않습니다.")
-    st.stop()
 
 # 앱 초기 설정
 st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
