@@ -1,9 +1,13 @@
+# ✅ 반드시 첫 줄에 위치해야 함!
 import streamlit as st
+st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
+
 import pandas as pd
 import datetime
 import os
 import csv
 import json
+
 
 # 앱 초기 설정
 st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
