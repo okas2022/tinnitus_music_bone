@@ -1,16 +1,14 @@
-# ✅ 반드시 첫 줄에 위치해야 함!
 import streamlit as st
-st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
-
 import pandas as pd
 import datetime
 import os
 import csv
 import json
 
-
-# 앱 초기 설정
+# ✅ 반드시 첫 줄에 위치해야 함!
 st.set_page_config(page_title="Tinnitus Therapy", layout="centered")
+
+# 앱 제목 및 안내
 st.title("🎵 음악으로 이명 치료하다")
 st.markdown("## 🎧 Tinnitus Sound Therapy App")
 st.markdown("<style> @keyframes fadein { from {opacity:0;} to {opacity:1;} } .slide { animation: fadein 1s ease-in-out; } </style>", unsafe_allow_html=True)
@@ -29,19 +27,22 @@ phone = st.text_input("전화번호")
 email = st.text_input("이메일 (선택사항)")
 birth = st.date_input("생년월일", value=datetime.date(1990, 1, 1))
 
-if st.button("정보 저장"):
+if st.button("정보 저장 및 다음으로 이동"):
     with open(data_file, mode="a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([name, phone, email, str(birth), str(datetime.datetime.now())])
     st.success("사용자 정보가 저장되었습니다.")
+    st.session_state.step = 1  # 다음 단계로 이동을 위한 상태 설정
 
 # 저장된 사용자 목록 확인
 if st.checkbox("저장된 사용자 보기"):
     df = pd.read_csv(data_file)
     st.dataframe(df)
-if st.button("다음으로 진행하기"):
-    st.session_state.step = 1
-    st.experimental_rerun()
+
+# 다음 단계 안내 버튼
+if "step" in st.session_state and st.session_state.step == 1:
+    if st.button("👉 다음 단계로 이동하기"):
+        st.info("여기에 설문 또는 치료 기능이 이어질 수 있습니다.")
 
 
 # 앱 초기 설정
