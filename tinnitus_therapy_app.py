@@ -35,6 +35,9 @@ if st.button("정보 저장"):
 if st.checkbox("저장된 사용자 보기"):
     df = pd.read_csv(data_file)
     st.dataframe(df)
+if st.button("다음으로 진행하기"):
+    st.session_state.step = 1
+    st.experimental_rerun()
 
 
 # 앱 초기 설정
